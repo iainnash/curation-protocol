@@ -41,6 +41,8 @@ contract DeployCore is Script {
         // factory.addValidUpgradePath(lastCuratorImpl, curatorImpl);
         console2.log("New curator impl: ");
         console2.log(curatorImpl);
+        console2.log("New metdata impl: ");
+        console2.log(existingMetadata);
         console2.log("New factory impl: ");
         console2.log(factoryImpl);
     }

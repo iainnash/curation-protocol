@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.15;
 
-import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-
 import { IMetadataRenderer } from "../interfaces/IMetadataRenderer.sol";
 import { ICuratorInfo, IERC721Metadata } from "../interfaces/ICuratorInfo.sol";
 import { IZoraDrop } from "../interfaces/IZoraDrop.sol";
@@ -11,6 +9,7 @@ import { ICurator } from "../interfaces/ICurator.sol";
 import { CurationMetadataBuilder } from "./CurationMetadataBuilder.sol";
 import { MetadataBuilder } from "micro-onchain-metadata-utils/MetadataBuilder.sol";
 import { MetadataJSONKeys } from "micro-onchain-metadata-utils/MetadataJSONKeys.sol";
+import { Strings } from "micro-onchain-metadata-utils/lib/Strings.sol";
 
 contract SVGMetadataRenderer is IMetadataRenderer {
     function initializeWithData(bytes memory initData) public {}
@@ -154,7 +153,7 @@ contract SVGMetadataRenderer is IMetadataRenderer {
         ICurator curator = ICurator(msg.sender);
 
         MetadataBuilder.JSONItem[] memory items = new MetadataBuilder.JSONItem[](4);
-        MetadataBuilder.JSONItem[] memory properties = new MetadataBuilder.JSONItem[](0);
+        MetadataBuilder.JSONItem[] memory properties = new MetadataBuilder.JSONItem[](3);
         ICurator.Listing memory listing = curator.getListing(tokenId);
 
         string memory curationName = "Untitled NFT";
@@ -162,7 +161,6 @@ contract SVGMetadataRenderer is IMetadataRenderer {
         RenderingType renderingType = RenderingType.ADDRESS;
         if (listing.curationTargetType == curator.CURATION_TYPE_NFT_ITEM()) {
             renderingType = RenderingType.NFT;
-            properties = new MetadataBuilder.JSONItem[](3);
             properties[0].key = "type";
             properties[0].value = "nft item";
             properties[0].quote = true;
@@ -200,9 +198,30 @@ contract SVGMetadataRenderer is IMetadataRenderer {
             properties[1].key = "contract";
             properties[1].value = Strings.toHexString(listing.curatedAddress);
             properties[1].quote = true;
+        } else if (listing.curationTargetType == curator.CURATION_TYPE_WALLET()) {
+            renderingType = RenderingType.ADDRESS;
+            properties = new MetadataBuilder.JSONItem[](2);
+            properties[0].key = "type";
+            properties[0].value = "wallet";
+            properties[0].quote = true;
+            properties[1].key = "address";
+            properties[1].value = Strings.toHexString(listing.curatedAddress);
+            properties[1].quote = true;
+        } else {
+            renderingType = RenderingType.ADDRESS;
+            properties[0].key = "type";
+            properties[0].value = "unknown";
+            properties[0].quote = true;
+            properties[1].key = "address";
+            properties[1].value = Strings.toHexString(listing.curatedAddress);
+            properties[1].quote = true;
         }
 
-        if (listing.curationTargetType == curator.CURATION_TYPE_NFT_CONTRACT() || listing.curationTargetType == curator.CURATION_TYPE_NFT_ITEM()) {
+        if (
+            listing.curationTargetType == curator.CURATION_TYPE_ZORA_EDITION() ||
+            listing.curationTargetType == curator.CURATION_TYPE_NFT_CONTRACT() ||
+            listing.curationTargetType == curator.CURATION_TYPE_NFT_ITEM()
+        ) {
             if (listing.curatedAddress.code.length > 0) {
                 try ICuratorInfo(listing.curatedAddress).name() returns (string memory result) {
                     curationName = result;
